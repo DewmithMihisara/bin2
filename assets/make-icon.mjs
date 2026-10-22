@@ -2,6 +2,7 @@
 // Usage: node assets/make-icon.mjs [preview-dir]
 // No dependencies. The unicorn is drawn on a 32x32 grid, with a hand-tuned 16x16
 // version for small sizes. Every size is scaled with hard nearest-neighbour pixels.
+// The background is transparent, so the icon sits on any wallpaper or folder view.
 
 import { writeFileSync, mkdirSync } from "node:fs";
 import { deflateSync } from "node:zlib";
@@ -10,124 +11,136 @@ import { fileURLToPath } from "node:url";
 
 // ---------- palette ----------
 const PALETTE = {
-  K: [0x24, 0x16, 0x45], // outline
+  K: [0x10, 0x0c, 0x18], // outline
   W: [0xff, 0xff, 0xff], // face
-  w: [0xdd, 0xe1, 0xf6], // face shade
-  G: [0xff, 0xd2, 0x3f], // horn
-  g: [0xe0, 0x9a, 0x00], // horn stripe
-  C: [0xff, 0x8f, 0xc8], // pink: ear and cheek
-  R: [0xff, 0x4d, 0x6d],
-  O: [0xff, 0x9f, 0x1c],
-  Y: [0xff, 0xe1, 0x4d],
-  L: [0x3d, 0xdc, 0x97],
-  B: [0x4c, 0xc9, 0xf0],
-  P: [0x9b, 0x5d, 0xe5],
-  D: [0x3a, 0x2a, 0x7c], // background, top
-  d: [0x2a, 0x1e, 0x5c], // background, bottom
-  S: [0xff, 0xf6, 0xb0], // star
-  s: [0xff, 0xff, 0xff], // star centre
+  c: [0xff, 0xe0, 0xf4], // face shade, next to the mane
+  M: [0xff, 0xc8, 0xf0], // muzzle
+  H: [0xf7, 0x8f, 0xe0], // horn
+  h: [0xff, 0xc8, 0xf4], // horn highlight
+  E: [0xf7, 0x8f, 0xe0], // inner ear
+  // Mane, from the neck outwards.
+  R: [0xff, 0x1f, 0x1f],
+  O: [0xff, 0x8a, 0x00],
+  Y: [0xff, 0xe8, 0x00],
+  L: [0x22, 0xe0, 0x22],
+  A: [0x14, 0xb4, 0xff],
+  U: [0x22, 0x2c, 0xf0],
+  V: [0x86, 0x22, 0xe8],
 };
-const RAINBOW = ["R", "O", "Y", "L", "B", "P"];
+const RAINBOW = ["R", "O", "Y", "L", "A", "U", "V"];
 
-// ---------- the unicorn, as pixel spans ----------
-// Each span table maps row -> [firstX, lastX]. The head faces right.
+// ---------- the unicorn ----------
+// Span tables map row -> [firstX, lastX]. The head faces left, the mane sweeps round to the right.
 const BIG = {
   n: 32,
+  horn: { 2: [7, 7], 3: [7, 8], 4: [8, 9], 5: [8, 10], 6: [9, 11], 7: [9, 12] },
+  hornHighlight: (x, y) => x === Math.floor((y + 13) / 2) && y >= 3,
+  ear: { 4: [15, 15], 5: [15, 16], 6: [15, 16], 7: [15, 16] },
+  innerEar: [[16, 6], [16, 7]],
+  jawFrom: 17,
   head: {
-  10: [15, 21], 11: [14, 22], 12: [13, 23], 13: [13, 24], 14: [13, 25], 15: [13, 26],
-  16: [13, 27], 17: [14, 27], 18: [15, 27], 19: [15, 26], 20: [14, 19], 21: [13, 19],
-  22: [13, 20], 23: [12, 20], 24: [12, 21], 25: [11, 21], 26: [11, 21], 27: [10, 22],
-  28: [10, 22], 29: [10, 22], 30: [10, 22],
+    8: [10, 17], 9: [9, 17], 10: [8, 17], 11: [6, 17], 12: [5, 17], 13: [4, 17],
+    14: [3, 16], 15: [3, 16], 16: [3, 15], 17: [4, 14], 18: [5, 12],
   },
-  horn: { 3: [26, 26], 4: [25, 26], 5: [24, 25], 6: [23, 25], 7: [22, 24], 8: [21, 24], 9: [20, 23] },
-  ear: { 7: [17, 17], 8: [16, 17], 9: [16, 18] },
-  maneTop: { 8: [12, 13], 9: [11, 15], 10: [9, 14] }, // forelock rows above the neck line
-  maneWidth: 6,
-  maneFrom: 11,
-  wave: (y) => Math.sin(y / 2.2) > 0.3,
-  shadeFrom: 21,
-  // Eye with a highlight, ear, cheek, nostril, smile.
-  details: [[19, 13, "K"], [20, 13, "W"], [19, 14, "K"], [20, 14, "K"], [17, 9, "C"],
-    [19, 17, "C"], [20, 17, "C"], [26, 16, "K"], [23, 18, "K"], [24, 18, "K"]],
-  hornStripe: (x, y) => (x - y) % 3 === 0,
-  stars: [[6, 5, true], [27, 25, true], [10, 2, false], [29, 9, false], [4, 15, false]],
+  muzzle: (x, y) => y >= 12 && x <= (y >= 14 ? 9 : 8),
+  shade: (x, y, x1) => x === x1 && y >= 9,
+  details: [[12, 12, "K"], [13, 12, "K"], [12, 13, "K"], [13, 13, "K"], // eye
+    [5, 14, "K"], // nostril
+    [7, 17, "K"], [8, 17, "K"]], // smile
+  mane: {
+    top: { 1: 18, 2: 18, 3: 18, 4: 18, 5: 18, 6: 18, 7: 18 }, // inner edge above the head line, behind the ear
+    neck: [19, 12, 30, 7], // inner edge below the jaw: from (x12, y19) down to (x7, y30)
+    cx: 14, cy: 15, rx: 14, ryUp: 14, ryDown: 16, // outer edge
+    cut: [7, 30, 26, 22], // bottom edge, a diagonal from the tail tip up to the right
+    lastRow: 30,
+  },
 };
 
-// Hand-drawn 16px version: at this size every pixel has to be placed on purpose.
-const SMALL = {
-  n: 16,
-  head: { 5: [7, 10], 6: [6, 11], 7: [6, 12], 8: [6, 13], 9: [7, 13], 10: [7, 11],
-    11: [6, 9], 12: [6, 10], 13: [5, 10], 14: [5, 10], 15: [5, 11] },
-  horn: { 1: [13, 13], 2: [12, 13], 3: [11, 12], 4: [10, 11] },
-  ear: { 3: [8, 8], 4: [8, 8] },
-  maneTop: { 4: [5, 7] },
-  maneWidth: 5,
-  maneFrom: 5,
-  wave: (y) => y % 4 === 1,
-  shadeFrom: 11,
-  details: [[9, 6, "K"], [8, 4, "C"], [9, 8, "C"], [13, 8, "K"]],
-  hornStripe: (x, y) => x === 11 && y === 3,
-  stars: [[2, 3, false], [13, 12, false]],
-};
+// Hand-placed 16px version. At this size every pixel is chosen on purpose.
+// . transparent, K outline, W face, M muzzle, H horn, then the mane colours.
+const SMALL_ART = [
+  "..K.............",
+  ".KHK......KKKK..",
+  ".KHHK...KKROYAK.",
+  "..KHHKKKWKROYAUK",
+  "...KWWWWWROYLAUK",
+  "..KWWWWWWROYLAUK",
+  ".KMMWKWWWROYLAUK",
+  "KMKMMWWWWROYLAUK",
+  "KMMMMWWWROYLAUVK",
+  ".KMMMWWKROYLAUVK",
+  "..KKKKKROYLAUVK.",
+  "......KROYLAUK..",
+  ".....KROYLAKK...",
+  "....KRROYKK.....",
+  "...KRROKK.......",
+  "...KRKK.........",
+];
+const fromArt = (rows) => rows.map((r) => [...r].map((c) => (c === "." ? null : c)));
 
-const inSpan = (spans, x, y) => spans[y] && x >= spans[y][0] && x <= spans[y][1];
+const lerp = (a, b, t) => a + (b - a) * t;
 
 function drawUnicorn(spec) {
-  const n = spec.n;
+  const { n, mane } = spec;
   const grid = Array.from({ length: n }, () => Array(n).fill(null));
   const set = (x, y, c) => { if (x >= 0 && x < n && y >= 0 && y < n) grid[y][x] = c; };
 
-  // Mane: rainbow bands that follow the back of the neck, with a gentle wave.
-  for (let y = spec.maneFrom; y < n; y++) {
-    if (!spec.head[y]) continue;
-    const back = spec.head[y][0];
-    const width = spec.maneWidth + (spec.wave(y) ? 1 : 0);
-    for (let d = 1; d <= width; d++) set(back - d, y, RAINBOW[Math.min(d - 1, RAINBOW.length - 1)]);
-  }
-  for (const [y, [x0, x1]] of Object.entries(spec.maneTop)) {
-    for (let x = x0; x <= x1; x++) set(x, +y, RAINBOW[Math.min(x1 - x, RAINBOW.length - 1)]);
+  // Mane: a rainbow crescent. Each row runs from an inner edge (the head, or the neck line
+  // under the jaw) to an elliptical outer edge, cut off below by a diagonal tail line.
+  const [ny0, nx0, ny1, nx1] = mane.neck;
+  const [tx0, ty0, tx1, ty1] = mane.cut;
+  for (let y = 0; y <= mane.lastRow; y++) {
+    let inner;
+    if (spec.head[y]) inner = spec.head[y][1] + 1;
+    else if (mane.top[y] !== undefined) inner = mane.top[y];
+    else if (y >= ny0) inner = Math.round(lerp(nx0, nx1, (y - ny0) / (ny1 - ny0)));
+    else continue;
+    const ry = y < mane.cy ? mane.ryUp : mane.ryDown;
+    const k = 1 - ((y - mane.cy) / ry) ** 2;
+    if (k <= 0) continue;
+    const outer = Math.round(mane.cx + mane.rx * Math.sqrt(k));
+    for (let x = inner; x <= outer; x++) {
+      const maxY = ty0 + ((x - tx0) * (ty1 - ty0)) / (tx1 - tx0);
+      if (y > maxY + 0.5) continue;
+      const f = (x - inner) / Math.max(1, outer - inner + 1);
+      set(x, y, RAINBOW[Math.min(RAINBOW.length - 1, Math.floor(f * RAINBOW.length))]);
+    }
   }
 
-  // Head and neck, with a soft shade along the throat.
-  for (const [y, [x0, x1]] of Object.entries(spec.head)) {
-    const shadeWidth = n === 32 ? 2 : 1;
-    for (let x = x0; x <= x1; x++) set(x, +y, +y >= spec.shadeFrom && x > x1 - shadeWidth ? "w" : "W");
+  // Head, muzzle and a soft pink edge where the face meets the mane.
+  for (const [ys, [x0, x1]] of Object.entries(spec.head)) {
+    const y = +ys;
+    for (let x = x0; x <= x1; x++) {
+      set(x, y, spec.muzzle(x, y) ? "M" : spec.shade(x, y, x1) ? "c" : "W");
+    }
   }
   for (const [y, [x0, x1]] of Object.entries(spec.ear)) for (let x = x0; x <= x1; x++) set(x, +y, "W");
-
-  // Horn with diagonal stripes.
+  for (const [x, y] of spec.innerEar) set(x, y, "E");
+  // Outline the back of the ear so it stands in front of the mane.
+  for (const [y, [, x1]] of Object.entries(spec.ear)) set(x1 + 1, +y, "K");
   for (const [y, [x0, x1]] of Object.entries(spec.horn)) {
-    for (let x = x0; x <= x1; x++) set(x, +y, spec.hornStripe(x, +y) ? "g" : "G");
+    for (let x = x0; x <= x1; x++) set(x, +y, spec.hornHighlight(x, +y) ? "h" : "H");
+  }
+
+  // The jaw line: a dark edge wherever the mane sits directly under the lower face.
+  const isFace = (c) => c === "W" || c === "M" || c === "c";
+  for (let y = n - 1; y >= spec.jawFrom; y--) {
+    for (let x = 0; x < n; x++) {
+      if (RAINBOW.includes(grid[y][x]) && isFace(grid[y - 1][x])) grid[y][x] = "K";
+    }
   }
 
   for (const [x, y, c] of spec.details) set(x, y, c);
   return grid;
 }
 
-// ---------- tile, outline and stars ----------
-function inTile(x, y, n) {
-  const cut = [3, 2, 1].map((c) => Math.round((c * n) / 32));
-  const edge = Math.min(y, n - 1 - y);
-  const c = edge < 3 ? cut[edge] : 0;
-  return x >= c && x <= n - 1 - c;
-}
-
-function compose(figure, spec) {
-  const n = spec.n;
-  const out = Array.from({ length: n }, (_, y) =>
-    Array.from({ length: n }, (_, x) => (inTile(x, y, n) ? (y < n / 2 ? "D" : "d") : null)),
-  );
-  const star = (cx, cy, big) => {
-    if (big) for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) out[cy + dy][cx + dx] = "S";
-    out[cy][cx] = big ? "s" : "S";
-  };
-  for (const [x, y, big] of spec.stars) star(x, y, big);
-
-  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) if (figure[y][x]) out[y][x] = figure[y][x];
-  // One-pixel outline around the figure, kept inside the tile.
+// ---------- outline ----------
+function compose(figure) {
+  const n = figure.length;
+  const out = figure.map((row) => row.slice());
   for (let y = 0; y < n; y++) {
     for (let x = 0; x < n; x++) {
-      if (figure[y][x] || !inTile(x, y, n)) continue;
+      if (figure[y][x]) continue;
       const near = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => figure[y + dy]?.[x + dx]);
       if (near) out[y][x] = "K";
     }
@@ -207,8 +220,8 @@ function ico(images) {
 }
 
 // ---------- build ----------
-const grid32 = compose(drawUnicorn(BIG), BIG);
-const grid16 = compose(drawUnicorn(SMALL), SMALL);
+const grid32 = compose(drawUnicorn(BIG));
+const grid16 = fromArt(SMALL_ART);
 // Each size uses whichever grid divides it evenly, so pixels stay perfectly square.
 const SIZES = [
   [16, grid16], [32, grid32], [48, grid16], [64, grid32], [128, grid32], [256, grid32],
@@ -220,7 +233,7 @@ writeFileSync(join(here, "bin2.ico"), ico(images));
 if (process.argv[2]) {
   mkdirSync(process.argv[2], { recursive: true });
   for (const { size, data } of images) writeFileSync(join(process.argv[2], `icon-${size}.png`), data);
-  // Big previews of the small grids, to judge them by eye.
+  // Big preview of the small grid, to judge it by eye.
   writeFileSync(join(process.argv[2], "preview-16.png"), png(256, rasterize(grid16, 256)));
 }
 console.log(`wrote bin2.ico (${SIZES.map(([s]) => s).join(", ")} px)`);
