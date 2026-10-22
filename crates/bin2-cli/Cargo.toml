@@ -12,3 +12,11 @@ path = "src/main.rs"
 [dependencies]
 bin2-core.workspace = true
 clap = { version = "4", features = ["derive"] }
+
+[target.'cfg(windows)'.dependencies]
+winreg = "0.55"
+windows-sys = { version = "0.59", features = [
+    "Win32_Foundation",
+    "Win32_UI_Shell",
+    "Win32_UI_WindowsAndMessaging",
+] }

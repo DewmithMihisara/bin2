@@ -1,5 +1,7 @@
 //! Actions shared by the `bin2` command-line tool and the Windows shell helper.
 
+pub mod shell;
+
 use std::fs;
 use std::path::{Path, PathBuf};
 
