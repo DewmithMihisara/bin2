@@ -50,6 +50,10 @@ enum Command {
         /// The .bin2 file.
         file: PathBuf,
     },
+    /// Add bin2 to Windows: right-click menus, double-click to open, and the bin2 command.
+    Install,
+    /// Remove bin2 from Windows. Your .bin2 files are not touched.
+    Uninstall,
 }
 
 fn main() -> ExitCode {
@@ -67,6 +71,8 @@ fn main() -> ExitCode {
             force,
         } => extract(&file, out_dir.as_deref(), force),
         Command::Info { file } => info(&file),
+        Command::Install => bin2_cli::install::install(),
+        Command::Uninstall => bin2_cli::install::uninstall(),
     };
     match result {
         Ok(()) => ExitCode::SUCCESS,

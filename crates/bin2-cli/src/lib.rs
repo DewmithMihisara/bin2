@@ -1,5 +1,6 @@
 //! Actions shared by the `bin2` command-line tool and the Windows shell helper.
 
+pub mod install;
 pub mod shell;
 
 use std::fs;
