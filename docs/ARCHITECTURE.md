@@ -45,17 +45,38 @@ PDF, common images, audio, video, text and Markdown already work through the bro
 
 ## Installed experience (Windows)
 
+### Built (v0.1)
+
+`bin2 install` sets everything up for the current user only, under `HKEY_CURRENT_USER`, with no admin rights:
+
+- **Files** go to `%LOCALAPPDATA%\Programs\bin2`: `bin2.exe` (command line) and `bin2w.exe` (windowless helper for Explorer).
+- **`.bin2` type** is registered with `Content Type = text/html`, so browsers render it as a page instead of raw text.
+- **Double-click** a `.bin2` runs `bin2w open`, which launches a Chromium-family default browser on the file. Other browsers get a temporary `.html` copy.
+- **Right-click a `.bin2`:** Open with bin2, Extract with bin2.
+- **Right-click any file:** Seal with bin2, Seal with bin2 (shareable .html). Name clashes become `name (2).bin2`, like Explorer.
+- **PATH** gains the install folder, keeping the value's registry type and any `%VARIABLES%`.
+- **Apps & features** lists bin2 with an uninstall entry.
+
+`bin2 uninstall` removes exactly what install added, and can remove itself while running.
+`bin2w` never shows a console window. It is silent on success and shows a message box on errors.
+
+On Windows 11, classic shell verbs sit under "Show more options". The top-level menu needs a packaged app.
+
+### Planned
+
 - **Desktop app:** Tauri (Rust + Windows WebView2), reusing the same viewers.
-- **Shell integration:** `.bin2` association, right-click "Seal with bin2" on files and "Seal folder" on folders, Explorer thumbnails from the static fallback.
+- **Windows 11 top-level menu:** an `IExplorerCommand` handler in an MSIX or sparse package.
+- **More shell integration:** "Seal folder" on folders, Explorer thumbnails from the static fallback.
 - **App features:** view, extract, open original in its native app, batch seal, re-seal old files with newer viewers.
-- **Installer:** MSI or NSIS via the Tauri bundler. It should also register `Content Type = text/html` for `.bin2`, so browsers treat it as a page.
+- **Installer:** MSI or NSIS via the Tauri bundler, replacing `bin2 install`.
 
 ## Code layout
 
 | Path | Purpose |
 |---|---|
 | `crates/bin2-core/` | Type detection, sealing, unsealing, manifest |
-| `crates/bin2-cli/` | The `bin2` command-line tool |
+| `crates/bin2-cli/` | The `bin2` command-line tool, the `bin2w` Explorer helper, install and uninstall |
+| `assets/` | The bin2 icon and the script that draws it |
 | `template/shell.html` | Page shell every bin2 file is built from |
 | `template/viewer.js` | Viewer inlined into every bin2 file |
 | `viewers/<type>/` | Future WASM decoder plugins, one per format |
@@ -71,7 +92,7 @@ PDF, common images, audio, video, text and Markdown already work through the bro
 
 ## Roadmap
 
-- **v0.1 (now):** core format, `bin2 seal / extract / info` CLI, browser-native viewers (images, PDF, audio, video, text, Markdown, HTML), hex view for everything else.
-- **v0.2:** WASM decoders for HEIC, RAW, PSD, TIFF, DOCX. Folder sealing. Tauri app, installer and right-click menus.
+- **v0.1 (now):** core format, `bin2 seal / extract / info` CLI, browser-native viewers (images, PDF, audio, video, text, Markdown, HTML), hex view for everything else. Per-user Windows install with right-click menus, double-click open, icon and PATH.
+- **v0.2:** WASM decoders for HEIC, RAW, PSD, TIFF, DOCX. Folder sealing. Tauri app and a real installer.
 - **v0.3:** old document formats via Document Liberation Project libs.
 - **v0.4:** emulation for old programs and game saves. "Thin" mode with shared decoders.
