@@ -1,0 +1,113 @@
+<!-- This is a bin2 file. Open it with bin2, or drag it into any web browser.
+
+     Seeing this text in a browser instead of the file? Rename this file so its
+     name ends in ".html" and open it again.
+
+     How to recover the original file by hand, without any software:
+     1. Find the element with id="bin2-manifest". It names the file and its SHA-256.
+     2. Find the element with id="bin2-payload". Its text (or the part of its
+        src after "base64,") is the original file, base64-encoded.
+     3. Base64-decode it. If the manifest says "encoding": "gzip+base64",
+        gunzip the result too. That is your original file.
+-->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="generator" content="bin2">
+<title>{{TITLE}} · bin2</title>
+<style>
+:root {
+  --bg: #f6f5f2; --panel: #ffffff; --text: #1d1d1f; --muted: #6b6b70;
+  --line: #e2e0da; --accent: #3d5afe; --accent-text: #ffffff; --ok: #1b8a4b;
+  --code-bg: #f0eee9;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #141416; --panel: #1d1d20; --text: #ececee; --muted: #9a9aa2;
+    --line: #2e2e33; --accent: #7c8cff; --accent-text: #0e0e10; --ok: #4cc983;
+    --code-bg: #26262a;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #141416; --panel: #1d1d20; --text: #ececee; --muted: #9a9aa2;
+  --line: #2e2e33; --accent: #7c8cff; --accent-text: #0e0e10; --ok: #4cc983;
+  --code-bg: #26262a;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  background: var(--bg); color: var(--text);
+  font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  display: flex; flex-direction: column;
+}
+.bar {
+  display: flex; align-items: center; gap: 14px; padding: 10px 16px;
+  background: var(--panel); border-bottom: 1px solid var(--line);
+}
+.brand { font-weight: 800; letter-spacing: -0.02em; font-size: 18px; }
+.brand span { color: var(--accent); }
+.meta { flex: 1; min-width: 0; }
+.name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sub { color: var(--muted); font-size: 13px; }
+.sub .ok { color: var(--ok); }
+.actions { display: flex; gap: 8px; }
+.actions[hidden] { display: none; }
+button, .btn {
+  font: inherit; font-size: 14px; padding: 6px 12px; border-radius: 8px; cursor: pointer;
+  border: 1px solid var(--line); background: var(--panel); color: var(--text); text-decoration: none;
+}
+.btn.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+main { flex: 1; min-height: 0; display: flex; overflow: auto; }
+.center { margin: auto; padding: 24px 16px; }
+.static-img { display: block; margin: auto; max-width: 100%; max-height: 100%; object-fit: contain; padding: 16px; }
+.frame { flex: 1; width: 100%; border: 0; background: #fff; }
+.media { margin: auto; max-width: 100%; max-height: 100%; padding: 16px; }
+.doc { width: 100%; max-width: 860px; margin: 0 auto; padding: 24px 16px 64px; }
+pre, code { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: 13px; }
+pre.text { white-space: pre-wrap; word-break: break-word; margin: 0; }
+.doc pre { background: var(--code-bg); padding: 12px; border-radius: 8px; overflow: auto; }
+.doc code { background: var(--code-bg); padding: 1px 4px; border-radius: 4px; }
+.doc pre code { background: none; padding: 0; }
+.doc blockquote { margin: 0; padding-left: 14px; border-left: 3px solid var(--line); color: var(--muted); }
+.doc a { color: var(--accent); }
+.hex { white-space: pre; overflow: auto; }
+.msg { color: var(--muted); }
+.msg h2 { color: var(--text); margin: 0 0 8px; font-size: 18px; }
+aside {
+  position: fixed; top: 58px; right: 16px; width: min(420px, calc(100% - 32px));
+  background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+  padding: 14px 16px; box-shadow: 0 8px 30px rgba(0,0,0,.18); font-size: 13px;
+}
+aside[hidden] { display: none; }
+aside table { width: 100%; border-collapse: collapse; }
+aside td { padding: 4px 0; vertical-align: top; border-bottom: 1px solid var(--line); }
+aside td:first-child { color: var(--muted); padding-right: 12px; white-space: nowrap; }
+aside td:last-child { word-break: break-all; }
+@media (max-width: 560px) {
+  .bar { flex-wrap: wrap; }
+  .actions { width: 100%; }
+  .actions > * { flex: 1; text-align: center; }
+}
+</style>
+</head>
+<body>
+<header class="bar">
+  <div class="brand">bin<span>2</span></div>
+  <div class="meta">
+    <div class="name">{{TITLE}}</div>
+    <div class="sub" id="bin2-sub">{{SUBTITLE}}</div>
+  </div>
+  <div class="actions" id="bin2-actions" hidden>
+    <button type="button" id="bin2-info-btn">Info</button>
+    <a class="btn primary" id="bin2-download" href="#">Download original</a>
+  </div>
+</header>
+<main id="bin2-stage">{{STATIC}}</main>
+<aside id="bin2-info" hidden></aside>
+<script type="application/json" id="bin2-manifest">{{MANIFEST}}</script>
+{{PAYLOAD}}
+<script>{{VIEWER}}</script>
+</body>
+</html>
