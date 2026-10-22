@@ -12,6 +12,8 @@ pub enum Collision {
     Fail,
     /// Replace the existing file.
     Overwrite,
+    /// Pick a free name like `photo (2).jpg`, as Explorer does.
+    Rename,
 }
 
 /// Seal one file. Returns the path of the written `.bin2` file.
@@ -76,15 +78,88 @@ pub fn parent_of(path: &Path) -> PathBuf {
 
 /// Write `bytes` to `out`, honouring the collision rule. Returns the path actually written.
 pub fn write_out(out: &Path, bytes: &[u8], collision: Collision) -> Result<PathBuf, String> {
-    if out.exists() && collision == Collision::Fail {
-        return Err(format!(
-            "{} already exists (use --force to overwrite)",
-            out.display()
-        ));
-    }
+    let out = &match collision {
+        Collision::Fail if out.exists() => {
+            return Err(format!(
+                "{} already exists (use --force to overwrite)",
+                out.display()
+            ))
+        }
+        Collision::Rename => unique_path(out),
+        _ => out.to_path_buf(),
+    };
     if let Some(dir) = out.parent() {
         fs::create_dir_all(dir).map_err(|e| format!("{}: {e}", dir.display()))?;
     }
     fs::write(out, bytes).map_err(|e| format!("{}: {e}", out.display()))?;
     Ok(out.to_path_buf())
+}
+
+/// Suffixes kept together when numbering a name, longest first.
+const COMPOUND_SUFFIXES: [&str; 2] = [".bin2.html", ".bin2"];
+
+/// Return `path` if it is free, otherwise the first free `name (2).ext`, `name (3).ext`, ...
+pub fn unique_path(path: &Path) -> PathBuf {
+    if !path.exists() {
+        return path.to_path_buf();
+    }
+    let name = path
+        .file_name()
+        .map(|n| n.to_string_lossy().into_owned())
+        .unwrap_or_default();
+    let (stem, suffix) = split_suffix(&name);
+    let dir = parent_of(path);
+    (2u32..)
+        .map(|n| dir.join(format!("{stem} ({n}){suffix}")))
+        .find(|candidate| !candidate.exists())
+        .expect("some numbered name is free")
+}
+
+/// Split `photo.jpg.bin2` into (`photo.jpg`, `.bin2`) and `photo.jpg` into (`photo`, `.jpg`).
+fn split_suffix(name: &str) -> (&str, &str) {
+    let lower = name.to_ascii_lowercase();
+    for suffix in COMPOUND_SUFFIXES {
+        if lower.ends_with(suffix) && lower.len() > suffix.len() {
+            return name.split_at(name.len() - suffix.len());
+        }
+    }
+    match name.rfind(".") {
+        Some(i) if i > 0 => name.split_at(i),
+        _ => (name, ""),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn splits_suffixes() {
+        assert_eq!(split_suffix("photo.jpg.bin2"), ("photo.jpg", ".bin2"));
+        assert_eq!(
+            split_suffix("photo.jpg.BIN2.html"),
+            ("photo.jpg", ".BIN2.html")
+        );
+        assert_eq!(split_suffix("photo.jpg"), ("photo", ".jpg"));
+        assert_eq!(split_suffix(".bashrc"), (".bashrc", ""));
+        assert_eq!(split_suffix("README"), ("README", ""));
+    }
+
+    #[test]
+    fn numbers_taken_names() {
+        let dir = std::env::temp_dir().join(format!("bin2-unique-{}", std::process::id()));
+        fs::create_dir_all(&dir).unwrap();
+        let first = dir.join("a.txt.bin2");
+        assert_eq!(unique_path(&first), first);
+
+        write_out(&first, b"1", Collision::Fail).unwrap();
+        let second = write_out(&first, b"2", Collision::Rename).unwrap();
+        let third = write_out(&first, b"3", Collision::Rename).unwrap();
+        assert_eq!(second, dir.join("a.txt (2).bin2"));
+        assert_eq!(third, dir.join("a.txt (3).bin2"));
+        assert!(write_out(&first, b"4", Collision::Fail).is_err());
+        assert_eq!(fs::read(&first).unwrap(), b"1");
+
+        fs::remove_dir_all(&dir).unwrap();
+    }
 }
