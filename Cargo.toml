@@ -1,0 +1,8 @@
+[workspace]
+resolver = "2"
+members = ["crates/bin2-core"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.80"
