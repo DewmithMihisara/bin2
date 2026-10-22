@@ -27,8 +27,8 @@ bin2 fixes that. It seals any file together with its own viewer, so the file car
 
 bin2 is in early development.
 
-- **Working now:** sealing and recovering any file, with viewers for common images, PDF, audio, video, text and Markdown.
-- **Next:** a Windows desktop app with right-click "Seal with bin2", and viewers for HEIC photos, camera RAW, Photoshop and Word documents.
+- **Working now:** sealing and recovering any file, with viewers for common images, PDF, audio, video, text and Markdown. On Windows, bin2 adds "Seal with bin2" to the right-click menu, and `.bin2` files open with a double-click.
+- **Next:** a full desktop app, and viewers for HEIC photos, camera RAW, Photoshop and Word documents.
 - **Later:** viewers for long-dead document formats, and emulation for old programs and games.
 
 ## The name
