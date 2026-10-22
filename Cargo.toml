@@ -1,8 +1,11 @@
 [workspace]
 resolver = "2"
-members = ["crates/bin2-core"]
+members = ["crates/bin2-core", "crates/bin2-cli"]
 
 [workspace.package]
 version = "0.1.0"
 edition = "2021"
 rust-version = "1.80"
+
+[workspace.dependencies]
+bin2-core = { path = "crates/bin2-core" }
